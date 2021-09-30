@@ -76,6 +76,7 @@ YOLOP = [
 
 ]
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+IS_train = False
 #+ Da_Seg_Head_para_idx
 class MCnet(nn.Module):
     def __init__(self, block_cfg, **kwargs):#block_cfg = yolop
@@ -113,6 +114,8 @@ class MCnet(nn.Module):
             #     print (x.shape)
             with torch.no_grad():
                 model_out = self.forward(torch.zeros(1, 3, s, s))
+                global IS_train
+                IS_train = True
                 try:
                     detects, _, _, _= model_out
                 except:
@@ -136,8 +139,15 @@ class MCnet(nn.Module):
         for i, block in enumerate(self.model):
             if block.from_ != -1:
                 x = cache[block.from_] if isinstance(block.from_, int) else [x if j == -1 else cache[j] for j in block.from_]       #calculate concat detect
-            #print("x.type = ",type(x))
+            global IS_train
+            
+            HiBiKi_is_my_waifu = 1
+            if IS_train:
+                if i == self.lanenet_out_idx and IS_train:
+                    for index in range(len(x)): x[index] = x[index].cuda() 
+                   
             x = block(x)
+            
             #print("--complete--")
             if i in self.seg_out_idx:     #save driving area segment result
                 m=nn.Sigmoid()

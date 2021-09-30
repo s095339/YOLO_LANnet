@@ -111,7 +111,8 @@ def main():
     # DP mode
     #device = select_device(logger, batch_size=cfg.TRAIN.BATCH_SIZE_PER_GPU* len(cfg.GPUS)) if not cfg.DEBUG \
     #    else select_device(logger, 'cpu')
-    device = torch.device('cpu')
+    device = torch.device('cuda')
+    print(torch.cuda.get_device_name(0))
     if args.local_rank != -1:
         assert torch.cuda.device_count() > args.local_rank
         torch.cuda.set_device(args.local_rank)
@@ -364,6 +365,7 @@ def main():
             # else:
             #     best_model = False
     else: #train_lanenet
+        model = model.to(device)
         if rank == -1 and torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model, device_ids=cfg.GPUS)
             # model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
@@ -371,7 +373,17 @@ def main():
         if rank != -1:
             model = DDP(model, device_ids=[args.local_rank], output_device=args.local_rank,find_unused_parameters=True)
         #model = torch.nn.DataParallel(model, device_ids=[0])
-        print(device)
+        model = model.cuda()
+        model.gr = 1.0
+        model.nc = 1
+        # print('bulid model finished')
+
+        print("begin to load data")
+        # Data loading
+        normalize = transforms.Normalize(
+            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+        )
+        print(next(model.parameters()).is_cuda )
         _model = lanenet_train(model,device)
         model = _model
         print("---------------training end-----------------")

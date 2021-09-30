@@ -1,9 +1,11 @@
 import math
 import numpy as np
 import torch
+from torch._C import device
 import torch.nn as nn
 from PIL import Image, ImageDraw
-DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+IS_TRAIN = False
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 class FCNDecoder(nn.Module):
     def __init__(self, decode_layers, decode_channels=[], decode_last_stride=8):
         super(FCNDecoder, self).__init__()
@@ -15,7 +17,6 @@ class FCNDecoder(nn.Module):
 
         self._conv_layers = []
         for _ch in self._decode_channels:
-            print("self._conv_layers 的 device = ",DEVICE)
             self._conv_layers.append(nn.Conv2d(_ch, self._out_channel, kernel_size=1, bias=False))
 
         self._conv_final = nn.Conv2d(self._out_channel, 2, kernel_size=1, bias=False)
@@ -31,12 +32,31 @@ class FCNDecoder(nn.Module):
         input_tensor = encode_data[0]
         #input_tensor = input_tensor.cuda()
         #print("input_tensor 的type = ",type(input_tensor))
-        score = self._conv_layers[0](input_tensor)
-        for i in range(1,3):
+        #print("-------0-------")
+        global IS_TRAIN
+        GPU_status = False
+        if IS_TRAIN:
+            #print(" GPU_status = True")
+            GPU_status = True
+        try:
+            score = self._conv_layers[0](input_tensor)
+            #print("is train------")
+        except: 
+            IS_TRAIN = True
+            #print("is train = true")
+            score = self._conv_layers[0](input_tensor.cpu())
+        IS_TRAIN = True
+        if IS_TRAIN: input_tensor = input_tensor.to(device)
+        for i in range(1,3):        
+            #print("-------1-------")
+            if GPU_status: score = score.to(device)
             deconv = self._deconv(score)
+            #print("-------2-------")
             input_tensor = encode_data[i]
-            #input_tensor = input_tensor.to(DEVICE)
+            input_tensor = input_tensor.to('cpu')
             score = self._conv_layers[i-1](input_tensor)
+            #print("-------3-------")
+            if GPU_status: score = score.to(device)
             fused = torch.add(deconv, score)
             score = fused
 

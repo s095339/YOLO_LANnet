@@ -58,9 +58,11 @@ def compute_loss(net_output, binary_label, instance_label):
     return total_loss, binary_loss, instance_loss, out, iou
 #------------------------------------------------------------------------
 def compose_img(image_data, out, binary_label, pix_embedding, instance_label, i):
-    val_gt = (image_data[i].cpu().numpy().transpose(1, 2, 0) + VGG_MEAN).astype(np.uint8)
-    val_pred = out[i].squeeze(0).cpu().numpy().transpose(0, 1) * 255
-    val_label = binary_label[i].squeeze(0).cpu().numpy().transpose(0, 1) * 255
+    val_gt = (image_data[:,i,:,:].cpu().numpy().transpose(1, 2, 0) + VGG_MEAN).astype(np.uint8)
+    print("out.shape = ",out.shape)
+    val_pred = out[:,i,:,:].squeeze(0).cpu().numpy().transpose(0, 1) * 255
+    print("binary_label.shape = ",binary_label.shape)
+    val_label = binary_label[:,i,:,:].squeeze(0).cpu().numpy().transpose(0, 1) * 255
     val_out = np.zeros((val_pred.shape[0], val_pred.shape[1], 3), dtype=np.uint8)
     val_out[:, :, 0] = val_pred
     val_out[:, :, 1] = val_label
@@ -117,7 +119,7 @@ def train(train_loader, model, optimizer, epoch, device):
         # update batch time
         batch_time.update(time.time() - end)
         end = time.time()
-
+        if step % 500 == 0: step = step+1
         if step % 500 == 0:
             print(
                 "Epoch {ep} Step {st} |({batch}/{size})| ETA: {et:.2f}|Total loss:{tot:.5f}|Binary loss:{bin:.5f}|Instance loss:{ins:.5f}|IoU:{iou:.5f}".format(

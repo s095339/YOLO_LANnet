@@ -1,9 +1,10 @@
 import math
 import numpy as np
 import torch
+from torch._C import device
 import torch.nn as nn
 from PIL import Image, ImageDraw
-
+IS_TRAIN = False
 class FCNDecoder(nn.Module):
     def __init__(self, decode_layers, decode_channels=[], decode_last_stride=8):
         super(FCNDecoder, self).__init__()
@@ -29,7 +30,10 @@ class FCNDecoder(nn.Module):
         ret = {}
         input_tensor = encode_data[0]
         #input_tensor.to(DEVICE)
+        global IS_TRAIN
+        if IS_TRAIN: input_tensor = input_tensor.to(device)
         score = self._conv_layers[0](input_tensor)
+        IS_TRAIN = True
         for i in range(1,3):
             print("i = ",i)
             deconv = self._deconv(score)
