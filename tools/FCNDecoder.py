@@ -43,17 +43,23 @@ class FCNDecoder(nn.Module):
             #print("is train------")
         except: 
             IS_TRAIN = True
-            #print("is train = true")
-            score = self._conv_layers[0](input_tensor.cpu())
+            self._conv_layers[0] = self._conv_layers[0].to(device)
+            #print("------0------")
+            #print(input_tensor.is_cuda)
+            score = self._conv_layers[0](input_tensor)
         IS_TRAIN = True
         if IS_TRAIN: input_tensor = input_tensor.to(device)
         for i in range(1,3):        
             #print("-------1-------")
             if GPU_status: score = score.to(device)
+            #print(score.is_cuda)
             deconv = self._deconv(score)
+            #print(deconv.is_cuda)
             #print("-------2-------")
+            
             input_tensor = encode_data[i]
-            input_tensor = input_tensor.to('cpu')
+            #print(input_tensor.is_cuda)
+            if GPU_status: self._conv_layers[i-1] = self._conv_layers[i-1].to(device)
             score = self._conv_layers[i-1](input_tensor)
             #print("-------3-------")
             if GPU_status: score = score.to(device)

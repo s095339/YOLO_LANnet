@@ -1,5 +1,6 @@
 import argparse
 import os, sys
+from pickle import FALSE
 import shutil
 import time
 from pathlib import Path
@@ -55,15 +56,22 @@ def detect(cfg,opt):
     print("loading model...")
     print("YOLO_LEN = ",len(YOLOP))
     model = get_net(cfg)
+    checkpoint = torch.load("./checkpoints/9_checkpoint.pth")
+
+    for param_tensor in model.state_dict():
+        print(param_tensor, "/t", model.state_dict()[param_tensor].size())
+
+    print(checkpoint)
+    model.load_state_dict(checkpoint.state_dict())
     checkpoint = torch.load(opt.weights, map_location= device)
-    model.load_state_dict(checkpoint['state_dict'])
+   # print("ckpt = ",checkpoint['state_dict'])
+    model.load_state_dict(checkpoint['state_dict'],strict = False)
     model = model.to(device)
     #usercode---
     print("YOLO_LEN = ",len(YOLOP))
     #-----------
     if half:
-        model.half()  # to FP16
-
+        model.half()  # to FP16  
     # Set Dataloader ------------------------------------
     print("Seting Dataloader...")
     if opt.source.isnumeric():
