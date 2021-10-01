@@ -39,10 +39,10 @@ transform=transforms.Compose([
             transforms.ToTensor(),
             normalize,
         ])
-
+from tools.FCNDecoder import IS_TRAIN
 
 def detect(cfg,opt):
-
+    IS_TRAIN = True
     logger, _, _ = create_logger(
         cfg, cfg.LOG_DIR, 'demo')
 
@@ -50,23 +50,23 @@ def detect(cfg,opt):
     if os.path.exists(opt.save_dir):  # output dir
         shutil.rmtree(opt.save_dir)  # delete dir
     os.makedirs(opt.save_dir)  # make new dir
-    half = device.type != 'cpu'  # half precision only supported on CUDA
+    half = device.type == 'cpu'  # half precision only supported on CUDA
 
     # Load model
-    print("loading model...")
-    print("YOLO_LEN = ",len(YOLOP))
     model = get_net(cfg)
-    checkpoint = torch.load("./checkpoints/9_checkpoint.pth")
-
-    for param_tensor in model.state_dict():
-        print(param_tensor, "/t", model.state_dict()[param_tensor].size())
-
-    print(checkpoint)
-    model.load_state_dict(checkpoint.state_dict())
-    checkpoint = torch.load(opt.weights, map_location= device)
+   # checkpoint = torch.load("./weights/9_checkpoint.pth", map_location = device)
+    #model initialize
+    #print("checkpoint_lanenet :")
+    #checkpoint_dict = {k: v for k, v in checkpoint.state_dict().items() if k.split(".")[1] in range(44)}
+    #print(checkpoint_dict)
+   # model.load_state_dict(checkpoint.state_dict())
+    checkpoint = torch.load("./weights/End-to-end.pth", map_location = device)
+    model.load_state_dict(checkpoint["state_dict"],strict = False)
+    model = model.to("cuda")
+    #checkpoint = torch.load(opt.weights, map_location= device)
    # print("ckpt = ",checkpoint['state_dict'])
-    model.load_state_dict(checkpoint['state_dict'],strict = False)
-    model = model.to(device)
+    #model.load_state_dict(checkpoint['state_dict'],strict = False)
+    
     #usercode---
     print("YOLO_LEN = ",len(YOLOP))
     #-----------
@@ -111,7 +111,11 @@ def detect(cfg,opt):
         lanenet_out = []
         try:
             det_out, da_seg_out,ll_seg_out,lanenet_out= model(img)
-            print("lanenet_out = ",lanenet_out)
+            binary_pred = np.array(lanenet_out["binary_seg_pred"].cpu().numpy()[0,0,:,:],dtype = np.uint8)
+            binary_pred[binary_pred>0]=255
+            cv2.imshow("binary",binary_pred)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         except:
             det_out, da_seg_out,ll_seg_out= model(img)
         
@@ -185,7 +189,7 @@ def detect(cfg,opt):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default='weights/9_checkpoint.pth', help='model.pth path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder   ex:inference/images
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')

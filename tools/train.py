@@ -142,7 +142,7 @@ def main():
     Da_Seg_Head_para_idx = [str(i) for i in range(25, 34)]
     Ll_Seg_Head_para_idx = [str(i) for i in range(34,43)]
     #user_code
-    LANENET_para_idx = [str(i) for i in range(43,50)]# instance segmantation brance
+    LANENET_para_idx = [str(i) for i in range(43,44)]# instance segmantation brance
 
     lf = lambda x: ((1 + math.cos(x * math.pi / cfg.TRAIN.END_EPOCH)) / 2) * \
                    (1 - cfg.TRAIN.LRF) + cfg.TRAIN.LRF  # cosine
@@ -154,13 +154,13 @@ def main():
             os.path.join(cfg.LOG_DIR, cfg.DATASET.DATASET), 'checkpoint.pth'
         )
         if os.path.exists(cfg.MODEL.PRETRAINED):
-            logger.info("=> loading model '{}'".format(cfg.MODEL.PRETRAINED))
+            logger.info("=> loading pretrained model '{}'".format(cfg.MODEL.PRETRAINED))
             checkpoint = torch.load(cfg.MODEL.PRETRAINED)
             begin_epoch = checkpoint['epoch']
             # best_perf = checkpoint['perf']
             last_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
+            model.load_state_dict(checkpoint['state_dict'],strict=False)
+            #optimizer.load_state_dict(checkpoint['optimizer'])
             logger.info("=> loaded checkpoint '{}' (epoch {})".format(
                 cfg.MODEL.PRETRAINED, checkpoint['epoch']))
             #cfg.NEED_AUTOANCHOR = False     #disable autoanchor
@@ -248,7 +248,7 @@ def main():
             logger.info('instance_segmantation ........')
             for k, v in model.named_parameters():
                 v.requires_grad = True  # train all layers
-                if k.split(".")[1] in Encoder_para_idx + Ll_Seg_Head_para_idx + Det_Head_para_idx + Da_Seg_Head_para_idx :
+                if k.split(".")[1] in Ll_Seg_Head_para_idx + Det_Head_para_idx + Da_Seg_Head_para_idx :
                     print('freezing %s' % k)
                     v.requires_grad = False
         #------------------------------------------
